@@ -3,9 +3,8 @@
   sudo: True
   gather_facts: no
   remote_user: vagrant
-  vars:
-    versions:
-      - "0.2.11"
+#  vars:
+#    Versions: [ "0.2.11" ]
   tasks:
   # password = vagrant
   - user: name=rpmbuilder
@@ -25,21 +24,29 @@
   gather_facts: no
   remote_user: rpmbuilder
   tasks:
-    - shell: /bin/echo  '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros  
-    - shell: /bin/echo  '%debug_package %{nil}' >> ~/.rpmmacros  
-    - shell: /bin/mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}  
+    - shell: "/bin/echo  '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros"
+    - shell: "/bin/echo  '%debug_package %{nil}' >> ~/.rpmmacros"
+    - shell: "/bin/mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}"
+    - shell: "/bin/mkdir -p ~/rpmbuild/SOURCES/peco-{{item}}"
+      with_items: Versions
     - get_url: url=https://github.com/peco/peco/releases/download/v{{item}}/peco_linux_amd64.tar.gz
-               dest=~/rpmbuild/SOURCES/peco_v{{item}}_linux_amd64.tar.gz
+               dest=~/rpmbuild/SOURCES/peco-{{item}}/peco_v{{item}}_linux_amd64.tar.gz
                mode=0440
-      with_items: 
-        - 0.2.11
+      with_items: Versions
+    # creating build source
+    - shell: "tar xvzf  ~/rpmbuild/SOURCES/peco-{{item}}/peco_v{{item}}_linux_amd64.tar.gz -C ~/rpmbuild/SOURCES/peco-{{item}}/"
+      with_items: Versions
+    - shell: "/bin/mv ~/rpmbuild/SOURCES/peco-{{item}}/peco_linux_amd64/peco ~/rpmbuild/SOURCES/peco-{{item}}/"
+      with_items: Versions
+    - shell: "cd ~/rpmbuild/SOURCES/; tar cvzf peco-{{item}}.tar.gz peco-{{item}}/peco"
+      with_items: Versions
+   
     - template: dest=~/rpmbuild/SPECS/peco-rpm-{{item}}.spec
                 src=templates/peco-rpm-version.spec
-      with_items:
-        - 0.2.11
+      with_items: Versions
     - shell: /usr/bin/rpmbuild -bb ~/rpmbuild/SPECS/peco-rpm-{{item}}.spec
-      with_items:
-        - 0.2.11
-    - fetch: src=~/rpmbuild/RPMS/x86_64/peco-0.2.11-0.x86_64.rpm
+      with_items: Versions
+    - fetch: src=~/rpmbuild/RPMS/x86_64/peco-{{item}}-0.x86_64.rpm
              dest=./release/
              flat=true
+      with_items: Versions

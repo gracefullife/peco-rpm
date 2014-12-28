@@ -6,7 +6,7 @@ Summary: Selective UI
 Group: Applications/Internet
 License: MIT
 URL: https://github.com/peco/peco
-Source0: %{name}_v%{version}_linux_amd64.tar.gz
+Source0: %{name}-%{version}.tar.gz
 # Source: https://github.com/peco/peco/releases/download/v%{Version}/peco_v%{Version}_linux_amd64.tar.gz
 Vendor: Daisuke Maki, mattn, syohex, and other contributers on github.
 Packager: Kazushige TAKEUCHI
