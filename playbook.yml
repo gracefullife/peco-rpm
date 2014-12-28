@@ -1,0 +1,45 @@
+- name: create environment for rpm  peco
+  hosts: env
+  sudo: True
+  gather_facts: no
+  remote_user: vagrant
+  vars:
+    versions:
+      - "0.2.11"
+  tasks:
+  # password = vagrant
+  - user: name=rpmbuilder
+          state=present
+          createhome=yes
+          password=$6$rounds=100000$aOCk2g3iiAQT96VQ$VUJKkY/hA8deTBnQz3W5iJGfpY6Q/AsLOdrkX21wHsOMGARP8mIOcokjlwRqYYU5JPzzAC8D7H7wMfEZ5nEKV1
+  - copy: src=~/.ssh/insecure_private_key
+          dest=/home/rpmbuilder/.ssh/
+          mode=400
+  - yum: name="{{item}}"
+         state=present
+    with_items:
+      - rpm-build
+      - "@Development Tools"  
+- name: setup env
+  hosts: cm
+  gather_facts: no
+  remote_user: rpmbuilder
+  tasks:
+    - shell: /bin/echo  '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros  
+    - shell: /bin/echo  '%debug_package %{nil}' >> ~/.rpmmacros  
+    - shell: /bin/mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}  
+    - get_url: url=https://github.com/peco/peco/releases/download/v{{item}}/peco_linux_amd64.tar.gz
+               dest=~/rpmbuild/SOURCES/peco_v{{item}}_linux_amd64.tar.gz
+               mode=0440
+      with_items: 
+        - 0.2.11
+    - template: dest=~/rpmbuild/SPECS/peco-rpm-{{item}}.spec
+                src=templates/peco-rpm-version.spec
+      with_items:
+        - 0.2.11
+    - shell: /usr/bin/rpmbuild -bb ~/rpmbuild/SPECS/peco-rpm-{{item}}.spec
+      with_items:
+        - 0.2.11
+    - fetch: src=~/rpmbuild/RPMS/x86_64/peco-0.2.11-0.x86_64.rpm
+             dest=./release/
+             flat=true
